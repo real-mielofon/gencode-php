@@ -27,6 +27,18 @@ angular
         templateUrl: 'views/about.html',
         controller: 'AboutCtrl'
       })
+      .when('/available', {
+        templateUrl: 'views/available.html',
+        controller: 'CodesCtrl'
+      })
+      .when('/sended', {
+        templateUrl: 'views/sended.html',
+        controller: 'CodesCtrl'
+      })
+      .when('/activated', {
+        templateUrl: 'views/activated.html',
+        controller: 'CodesCtrl'
+      })
       .otherwise({
         redirectTo: '/'
       });
