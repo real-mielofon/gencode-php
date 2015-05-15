@@ -67,18 +67,20 @@ class Application extends Slim
 //        $this->add(new \Slim\Middleware\SessionCookie(
   //          array('secret' => 'gencode2015secret')));
 
-        $this->add(new \Slim\Middleware\SessionCookie(array(
-            'expires' => '20 minutes',
-            'path' => '/',
-            'domain' => null,
-            'secure' => false,
-            'httponly' => false,
-            'name' => 'slim_session',
-            'secret' => 'CHANGE_ME',
-            'cipher' => MCRYPT_RIJNDAEL_256,
-            'cipher_mode' => MCRYPT_MODE_CBC
-        )));
+        // $this->add(new \Slim\Middleware\SessionCookie(array(
+        //     'expires' => '20 minutes',
+        //     'path' => '/',
+        //     'domain' => null,
+        //     'secure' => false,
+        //     'httponly' => false,
+        //     'name' => 'slim_session',
+        //     'secret' => 'CHANGE_ME',
+        //     'cipher' => MCRYPT_RIJNDAEL_256,
+        //     'cipher_mode' => MCRYPT_MODE_CBC
+        // )));
+
         //$this->add(new Authenticate());
+
 
         // /features
         $this->get('/features', function () {
@@ -130,21 +132,21 @@ class Application extends Slim
 
         // /available
         $this->get('/available', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes']);
+            $codes = new Codes($this->config['codes'], $this->config['database']);
             $this->response->headers->set('Content-Type', 'application/json');
             $this->response->setBody(json_encode($codes->getAvailable()));
         });
 
         // /sended
         $this->get('/sended', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes']);
+            $codes = new Codes($this->config['codes'], $this->config['database']);
             $this->response->headers->set('Content-Type', 'application/json');
             $this->response->setBody(json_encode($codes->getSended()));
         });
 
         // /activated
         $this->get('/activated', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes']);
+            $codes = new Codes($this->config['codes'], $this->config['database']);
             $this->response->headers->set('Content-Type', 'application/json');
             $this->response->setBody(json_encode($codes->getActivated()));
         });

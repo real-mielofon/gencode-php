@@ -14,4 +14,11 @@ return array(
         ),
     ),
     'codes' => '',
+
+    'database' => array(
+        'servername' => 'localhost',
+        'basename' => 'gencode',
+        'username' => 'gencode',
+        'password' => 'MHFFssAqNL8SA8L7',
+        ),
 );
