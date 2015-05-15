@@ -1,1 +1,8 @@
-<p>This is the activated view.</p>
+<div id="activated-key-stream">
+  <div class='activated-key' 
+  	ng-repeat="key in activatedKeys | orderBy:'activated_at':true" 
+  	ng-class-odd="'odd'" 
+  	ng-class-even="'even'">
+  	<p><b>{{key.id}}</b> create at {{key.created_at | date}} and send at {{key.sended_at | date}} and activated at {{key.activated_at | date}}</p>
+  </div>
+</div>

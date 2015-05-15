@@ -8,44 +8,23 @@
  * Controller of the genCodePhpApp
  */
 angular.module('genCodePhpApp')
-  .controller('UsersCtrl', function ($scope, $http) {
+	.controller('UsersCtrl', function ($scope, $http, $rootScope, $location) {
 
-    function createUnknownError(status) {
-      return {
-        status: status,
-        statusText: 'Internal Server Error',
-        description: 'No details available'
-      };
-    }
+		$scope.user = {username: '', password: ''};
+		$scope.errorMessage = '';
 
-    $scope.awesomeThings = [];
-    $scope.loading = true;
+		$scope.login = function() {
+			$http.post('/api/login', $scope.user).success(function(data) {
+				console.log('login '+data.toString());
+				if (data.state === 'success') {
+					$rootScope.authenticated = true;
+					$rootScope.currentUser = data.username;
+					$location.path('/');
+				}
+				else {
+					$scope.errorMessage = data.message;
+				}
+			});
+		};
 
-    // Get awesome things list
-    $http({method: 'GET', url: '/api/features'}).
-
-      success(function (data) {
-        $scope.loading = false;
-        $scope.awesomeThings = data;
-
-        // Get description of each thing
-        $scope.awesomeThings.forEach(function (thing) {
-          thing.loading = true;
-
-          $http({method: 'GET', url: thing.href}).
-            success(function (data) {
-              thing.loading = false;
-              thing.description = data.description;
-            }).
-            error(function (data, status) {
-              thing.loading = false;
-              thing.error = data && data.description ? data : createUnknownError(status);
-            });
-        });
-      }).
-
-      error(function (data, status) {
-        $scope.loading = false;
-        $scope.error = data && data.description ? data : createUnknownError(status);
-      });
-  });
+	});

@@ -3,6 +3,9 @@
 namespace Api;
 
 use Api\Model\Features;
+use Api\Model\Authenticate;
+use Api\Model\Users;
+use Api\Model\Codes;
 use \Slim\Slim;
 use \Exception;
 
@@ -11,6 +14,24 @@ class Application extends Slim
 {
     public $configDirectory;
     public $config;
+
+    public function authenticate() {
+        return function ($route) {
+            if (!isset($_SESSION['user'])) {
+                $app = \Slim\Slim::getInstance();
+                //$app->redirect('/#/login');
+
+                $res = array(
+                        'state' => 'error',
+                        'message' => 'Need autentification',
+                    );
+                $app->response->headers->set('Content-Type', 'application/json');
+                $app->response->setBody(json_encode($res));
+
+                $app->stop();
+            };
+        };
+    }
 
     protected function initConfig()
     {
@@ -28,7 +49,10 @@ class Application extends Slim
     {
         // Slim initialization
         parent::__construct($userSettings);
-        $this->config('debug', false);
+        $this->config('debug', true);
+        $this->log->setEnabled(true);
+        $this->log->setLevel(\Slim\Log::DEBUG);
+
         $this->notFound(function () {
             $this->handleNotFound();
         });
@@ -39,6 +63,22 @@ class Application extends Slim
         // Config
         $this->configDirectory = __DIR__ . '/../../' . $configDirectory;
         $this->config = $this->initConfig();
+
+//        $this->add(new \Slim\Middleware\SessionCookie(
+  //          array('secret' => 'gencode2015secret')));
+
+        $this->add(new \Slim\Middleware\SessionCookie(array(
+            'expires' => '20 minutes',
+            'path' => '/',
+            'domain' => null,
+            'secure' => false,
+            'httponly' => false,
+            'name' => 'slim_session',
+            'secret' => 'CHANGE_ME',
+            'cipher' => MCRYPT_RIJNDAEL_256,
+            'cipher_mode' => MCRYPT_MODE_CBC
+        )));
+        //$this->add(new Authenticate());
 
         // /features
         $this->get('/features', function () {
@@ -56,7 +96,60 @@ class Application extends Slim
             $this->response->headers->set('Content-Type', 'application/json');
             $this->response->setBody(json_encode($feature));
         });
+
+        // /login
+        $this->post('/login', function () {
+            $login = json_decode($this->request->getBody());
+
+            $users = new Users($this->config['users']);
+            $user = $users->getUser($login->username);
+            if ($user === null) {
+                return $this->notFound();
+            }
+            if (!$users->auth($login->username, $login->password)) {
+                return $this->notFound();
+            }
+
+
+            $_SESSION['user'] = $login->username;
+
+
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setBody(json_encode($user));
+        });
+
+        // /logout
+        $this->get('/logout', function () {
+            unset($_SESSION['user']);
+            $res = array(
+                    'state' => 'success',
+                );
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setBody(json_encode($res));
+        });
+
+        // /available
+        $this->get('/available', $this->authenticate(), function () {
+            $codes = new Codes($this->config['codes']);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setBody(json_encode($codes->getAvailable()));
+        });
+
+        // /sended
+        $this->get('/sended', $this->authenticate(), function () {
+            $codes = new Codes($this->config['codes']);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setBody(json_encode($codes->getSended()));
+        });
+
+        // /activated
+        $this->get('/activated', $this->authenticate(), function () {
+            $codes = new Codes($this->config['codes']);
+            $this->response->headers->set('Content-Type', 'application/json');
+            $this->response->setBody(json_encode($codes->getActivated()));
+        });
     }
+
 
     public function handleNotFound()
     {
@@ -85,7 +178,7 @@ class Application extends Slim
         )));
     }
 
-    /**
+    /**c
      * @return \Slim\Http\Response
      */
     public function invoke()

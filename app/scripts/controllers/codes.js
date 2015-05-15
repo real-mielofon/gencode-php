@@ -18,34 +18,47 @@ angular.module('genCodePhpApp')
       };
     }
 
-    $scope.awesomeThings = [];
+    function getAvailibleKeys () {
+      $http({method: 'GET', url: '/api/available'}).
+        success(function (data) {
+          $scope.loading = true;
+          $scope.availabledKeys = data;
+        }).
+        error(function (data, status) {
+          $scope.loading = false;
+          $scope.error = data && data.description ? data : createUnknownError(status);
+        });
+    }
+
+    function getSendedKeys () {
+      $http({method: 'GET', url: '/api/sended'}).
+        success(function (data) {
+          $scope.sendedKeys = data;
+        }).
+        error(function (data, status) {
+          $scope.error = data && data.description ? data : createUnknownError(status);
+        });
+    }
+
+    function getActivatedKeys () {
+      $http({method: 'GET', url: '/api/activated'}).
+        success(function (data) {
+          $scope.activatedKeys = data;
+        }).
+        error(function (data, status) {
+          $scope.error = data && data.description ? data : createUnknownError(status);
+        });
+    }
+
+    $scope.availabledKeys = [];
+    $scope.sendedKeys = [];
+    $scope.activatedKeys = [];
+    $scope.email = '';
+
     $scope.loading = true;
 
-    // Get awesome things list
-    $http({method: 'GET', url: '/api/features'}).
+    getAvailibleKeys();
+    getSendedKeys();
+    getActivatedKeys();
 
-      success(function (data) {
-        $scope.loading = false;
-        $scope.awesomeThings = data;
-
-        // Get description of each thing
-        $scope.awesomeThings.forEach(function (thing) {
-          thing.loading = true;
-
-          $http({method: 'GET', url: thing.href}).
-            success(function (data) {
-              thing.loading = false;
-              thing.description = data.description;
-            }).
-            error(function (data, status) {
-              thing.loading = false;
-              thing.error = data && data.description ? data : createUnknownError(status);
-            });
-        });
-      }).
-
-      error(function (data, status) {
-        $scope.loading = false;
-        $scope.error = data && data.description ? data : createUnknownError(status);
-      });
   });

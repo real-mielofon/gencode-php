@@ -1,1 +1,5 @@
-<p>This is the sended view.</p>
+<div class="sended-key" ng-repeat="key in sendedKeys | orderBy:'sended_at':true" ng-class-odd="'odd'" ng-class-even="'even'">
+	<p><b>{{key.id}}</b> create at {{key.created_at | date}} and send at {{key.sended_at | date}} to {{key.send_to}}</p>
+</div>
+<input #email type="email" ng-model="email" placeholder="e-Mail" class="form-control">
+<button ng-click="sendKey()">Send key</button>

@@ -1,1 +1,5 @@
-<p>This is the available view.</p>
+<div class='available-key' ng-repeat="key in availabledKeys | orderBy:'created_at':true" ng-class-odd="'odd'" ng-class-even="'even'">
+	<p><b>{{key.id}}</b> at {{key.created_at | date:"h:mma 'on' MMM d, y"}}</p>
+</div>
+
+<button ng-click="generateKeys()">Send key</button>
