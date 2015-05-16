@@ -2,193 +2,184 @@
 
 namespace Api;
 
-use Api\Model\Features;
 use Api\Model\Authenticate;
-use Api\Model\Users;
 use Api\Model\Codes;
-use \Slim\Slim;
+use Api\Model\Features;
+use Api\Model\Users;
 use \Exception;
+use \Slim\Slim;
 
 // TODO Move all "features" things to a class with index() and get() methods
-class Application extends Slim
-{
-    public $configDirectory;
-    public $config;
 
-    public function authenticate() {
-        return function ($route) {
-            if (!isset($_SESSION['user'])) {
-                $app = \Slim\Slim::getInstance();
-                //$app->redirect('/#/login');
+class Application extends Slim {
+	public $configDirectory;
+	public $config;
 
-                $res = array(
-                        'state' => 'error',
-                        'message' => 'Need autentification',
-                    );
-                $app->response->headers->set('Content-Type', 'application/json');
-                $app->response->setBody(json_encode($res));
+	public function authenticate() {
+		return function ($route) {
+			if (!isset($_SESSION['user'])) {
+				$app = \Slim\Slim::getInstance();
+				//$app->redirect('/#/login');
 
-                $app->stop();
-            };
-        };
-    }
+				$res = array(
+					'state'   => 'error',
+					'message' => 'Need autentification',
+				);
+				$app->response->headers->set('Content-Type', 'application/json');
+				$app->response->setBody(json_encode($res));
 
-    protected function initConfig()
-    {
-        $config = array();
-        if (!file_exists($this->configDirectory) || !is_dir($this->configDirectory)) {
-            throw new Exception('Config directory is missing: ' . $this->configDirectory, 500);
-        }
-        foreach (preg_grep('/\\.php$/', scandir($this->configDirectory)) as $filename) {
-            $config = array_replace_recursive($config, include $this->configDirectory . '/' . $filename);
-        }
-        return $config;
-    }
+				$app->stop();
+			};
+		};
+	}
 
-    public function __construct(array $userSettings = array(), $configDirectory = 'config')
-    {
-        // Slim initialization
-        parent::__construct($userSettings);
-        $this->config('debug', true);
-        $this->log->setEnabled(true);
-        $this->log->setLevel(\Slim\Log::DEBUG);
+	protected function initConfig() {
+		$config = array();
+		if (!file_exists($this->configDirectory) || !is_dir($this->configDirectory)) {
+			throw new Exception('Config directory is missing: '.$this->configDirectory, 500);
+		}
+		foreach (preg_grep('/\\.php$/', scandir($this->configDirectory)) as $filename) {
+			$config = array_replace_recursive($config, include $this->configDirectory.'/'.$filename);
+		}
+		return $config;
+	}
 
-        $this->notFound(function () {
-            $this->handleNotFound();
-        });
-        $this->error(function ($e) {
-            $this->handleException($e);
-        });
+	public function __construct(array $userSettings = array(), $configDirectory = 'config') {
+		// Slim initialization
+		parent::__construct($userSettings);
+		$this->config('debug', true);
+		$this->log->setEnabled(true);
+		$this->log->setLevel(\Slim\Log::DEBUG);
 
-        // Config
-        $this->configDirectory = __DIR__ . '/../../' . $configDirectory;
-        $this->config = $this->initConfig();
+		$this->notFound(function () {
+				$this->handleNotFound();
+			});
+		$this->error(function ($e) {
+				$this->handleException($e);
+			});
 
-//        $this->add(new \Slim\Middleware\SessionCookie(
-  //          array('secret' => 'gencode2015secret')));
+		// Config
+		$this->configDirectory = __DIR__ .'/../../'.$configDirectory;
+		$this->config          = $this->initConfig();
 
-        // $this->add(new \Slim\Middleware\SessionCookie(array(
-        //     'expires' => '20 minutes',
-        //     'path' => '/',
-        //     'domain' => null,
-        //     'secure' => false,
-        //     'httponly' => false,
-        //     'name' => 'slim_session',
-        //     'secret' => 'CHANGE_ME',
-        //     'cipher' => MCRYPT_RIJNDAEL_256,
-        //     'cipher_mode' => MCRYPT_MODE_CBC
-        // )));
+		//        $this->add(new \Slim\Middleware\SessionCookie(
+		//          array('secret' => 'gencode2015secret')));
 
-        //$this->add(new Authenticate());
+		// $this->add(new \Slim\Middleware\SessionCookie(array(
+		//     'expires' => '20 minutes',
+		//     'path' => '/',
+		//     'domain' => null,
+		//     'secure' => false,
+		//     'httponly' => false,
+		//     'name' => 'slim_session',
+		//     'secret' => 'CHANGE_ME',
+		//     'cipher' => MCRYPT_RIJNDAEL_256,
+		//     'cipher_mode' => MCRYPT_MODE_CBC
+		// )));
 
+		//$this->add(new Authenticate());
 
-        // /features
-        $this->get('/features', function () {
-            $features = new Features($this->config['features']);
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($features->getFeatures()));
-        });
+		// /features
+		$this->get('/features', function () {
+				$features = new Features($this->config['features']);
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($features->getFeatures()));
+			});
 
-        $this->get('/features/:id', function ($id) {
-            $features = new Features($this->config['features']);
-            $feature = $features->getFeature($id);
-            if ($feature === null) {
-                return $this->notFound();
-            }
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($feature));
-        });
+		$this->get('/features/:id', function ($id) {
+				$features = new Features($this->config['features']);
+				$feature = $features->getFeature($id);
+				if ($feature === null) {
+					return $this->notFound();
+				}
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($feature));
+			});
 
-        // /login
-        $this->post('/login', function () {
-            $login = json_decode($this->request->getBody());
+		// /login
+		$this->post('/login', function () {
+				$login = json_decode($this->request->getBody());
 
-            $users = new Users($this->config['users']);
-            $user = $users->getUser($login->username);
-            if ($user === null) {
-                return $this->notFound();
-            }
-            if (!$users->auth($login->username, $login->password)) {
-                return $this->notFound();
-            }
+				$users = new Users($this->config['users']);
+				$user = $users->getUser($login->username);
+				if ($user === null) {
+					return $this->notFound();
+				}
+				if (!$users->auth($login->username, $login->password)) {
+					return $this->notFound();
+				}
 
+				$_SESSION['user'] = $login->username;
 
-            $_SESSION['user'] = $login->username;
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($user));
+			});
 
+		// /logout
+		$this->get('/logout', function () {
+				unset($_SESSION['user']);
+				$res = array(
+					'state' => 'success',
+				);
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($res));
+			});
 
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($user));
-        });
+		// /available
+		$this->get('/available', $this->authenticate(), function () {
+				$codes = new Codes($this->config['codes'], $this->config['database']);
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($codes->getAvailable()));
+			});
 
-        // /logout
-        $this->get('/logout', function () {
-            unset($_SESSION['user']);
-            $res = array(
-                    'state' => 'success',
-                );
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($res));
-        });
+		// /sended
+		$this->get('/sended', $this->authenticate(), function () {
+				$codes = new Codes($this->config['codes'], $this->config['database']);
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($codes->getSended()));
+			});
 
-        // /available
-        $this->get('/available', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes'], $this->config['database']);
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($codes->getAvailable()));
-        });
+		// /activated
+		$this->get('/activated', $this->authenticate(), function () {
+				$codes = new Codes($this->config['codes'], $this->config['database']);
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($codes->getActivated()));
+			});
+	}
 
-        // /sended
-        $this->get('/sended', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes'], $this->config['database']);
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($codes->getSended()));
-        });
+	public function handleNotFound() {
+		throw new Exception(
+			'Resource '.$this->request->getResourceUri().' using '
+			.$this->request->getMethod().' method does not exist.',
+			404
+		);
+	}
 
-        // /activated
-        $this->get('/activated', $this->authenticate(), function () {
-            $codes = new Codes($this->config['codes'], $this->config['database']);
-            $this->response->headers->set('Content-Type', 'application/json');
-            $this->response->setBody(json_encode($codes->getActivated()));
-        });
-    }
+	public function handleException(Exception $e) {
+		$status     = $e->getCode();
+		$statusText = \Slim\Http\Response::getMessageForCode($status);
+		if ($statusText === null) {
+			$status     = 500;
+			$statusText = 'Internal Server Error';
+		}
 
+		$this->response->setStatus($status);
+		$this->response->headers->set('Content-Type', 'application/json');
+		$this->response->setBody(json_encode(array(
+					'status'      => $status,
+					'statusText'  => preg_replace('/^[0-9]+ (.*)$/', '$1', $statusText),
+					'description' => $e->getMessage(),
+				)));
+	}
 
-    public function handleNotFound()
-    {
-        throw new Exception(
-            'Resource ' . $this->request->getResourceUri() . ' using '
-            . $this->request->getMethod() . ' method does not exist.',
-            404
-        );
-    }
-
-    public function handleException(Exception $e)
-    {
-        $status = $e->getCode();
-        $statusText = \Slim\Http\Response::getMessageForCode($status);
-        if ($statusText === null) {
-            $status = 500;
-            $statusText = 'Internal Server Error';
-        }
-
-        $this->response->setStatus($status);
-        $this->response->headers->set('Content-Type', 'application/json');
-        $this->response->setBody(json_encode(array(
-            'status' => $status,
-            'statusText' => preg_replace('/^[0-9]+ (.*)$/', '$1', $statusText),
-            'description' => $e->getMessage(),
-        )));
-    }
-
-    /**c
-     * @return \Slim\Http\Response
-     */
-    public function invoke()
-    {
-        foreach ($this->middleware as $middleware) {
-            $middleware->call();
-        }
-        $this->response()->finalize();
-        return $this->response();
-    }
+	/**c
+	 * @return \Slim\Http\Response
+	 */
+	public function invoke() {
+		foreach ($this->middleware as $middleware) {
+			$middleware->call();
+		}
+		$this->response()->finalize();
+		return $this->response();
+	}
 }
