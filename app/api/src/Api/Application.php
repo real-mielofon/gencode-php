@@ -47,7 +47,7 @@ class Application extends Slim {
 	public function __construct(array $userSettings = array(), $configDirectory = 'config') {
 		// Slim initialization
 		parent::__construct($userSettings);
-		$this->config('debug', true);
+		$this->config('debug', false);
 		$this->log->setEnabled(true);
 		$this->log->setLevel(\Slim\Log::DEBUG);
 
