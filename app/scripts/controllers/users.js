@@ -20,6 +20,7 @@ angular.module('genCodePhpApp')
 					$rootScope.authenticated = true;
 					$rootScope.currentUser = data.username;
 					$location.path('/');
+					$scope.$broadcast('eventRefresh');
 				}
 				else {
 					$scope.errorMessage = data.message;

@@ -50,6 +50,22 @@ angular.module('genCodePhpApp')
         });
     }
 
+    function generateKeys() {
+      $http({method: 'GET', url: '/api/generatekeys'}).
+        success(function (data) {
+          getAvailibleKeys();
+        }).
+        error(function (data, status) {
+          $scope.error = data && data.description ? data : createUnknownError(status);
+        });
+    }
+
+    $scope.$on('eventRefresh', function(){
+      getAvailibleKeys();
+      getSendedKeys();
+      getSendedKeys();
+    });
+
     $scope.availabledKeys = [];
     $scope.sendedKeys = [];
     $scope.activatedKeys = [];

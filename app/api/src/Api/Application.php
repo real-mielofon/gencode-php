@@ -47,7 +47,8 @@ class Application extends Slim {
 	public function __construct(array $userSettings = array(), $configDirectory = 'config') {
 		// Slim initialization
 		parent::__construct($userSettings);
-		$this->config('debug', false);
+		$this->config('debug', true);
+		//false);
 		$this->log->setEnabled(true);
 		$this->log->setLevel(\Slim\Log::DEBUG);
 
@@ -62,8 +63,8 @@ class Application extends Slim {
 		$this->configDirectory = __DIR__ .'/../../'.$configDirectory;
 		$this->config          = $this->initConfig();
 
-		//        $this->add(new \Slim\Middleware\SessionCookie(
-		//          array('secret' => 'gencode2015secret')));
+		$this->add(new \Slim\Middleware\SessionCookie(
+				array('secret' => 'gencode2015secret')));
 
 		// $this->add(new \Slim\Middleware\SessionCookie(array(
 		//     'expires' => '20 minutes',
@@ -79,6 +80,7 @@ class Application extends Slim {
 
 		//$this->add(new Authenticate());
 
+		$this->codes = new Codes($this->config['codes'], $this->config['database']);
 		// /features
 		$this->get('/features', function () {
 				$features = new Features($this->config['features']);
@@ -127,23 +129,29 @@ class Application extends Slim {
 
 		// /available
 		$this->get('/available', $this->authenticate(), function () {
-				$codes = new Codes($this->config['codes'], $this->config['database']);
 				$this->response->headers->set('Content-Type', 'application/json');
-				$this->response->setBody(json_encode($codes->getAvailable()));
+				$this->response->setBody(json_encode($this->codes->getAvailable()));
 			});
 
 		// /sended
 		$this->get('/sended', $this->authenticate(), function () {
-				$codes = new Codes($this->config['codes'], $this->config['database']);
 				$this->response->headers->set('Content-Type', 'application/json');
-				$this->response->setBody(json_encode($codes->getSended()));
+				$this->response->setBody(json_encode($this->codes->getSended()));
 			});
 
 		// /activated
 		$this->get('/activated', $this->authenticate(), function () {
-				$codes = new Codes($this->config['codes'], $this->config['database']);
 				$this->response->headers->set('Content-Type', 'application/json');
-				$this->response->setBody(json_encode($codes->getActivated()));
+				$this->response->setBody(json_encode($this->codes->getActivated()));
+			});
+
+		$this->get('/generatekeys', $this->authenticate(), function () {
+				$this->response->headers->set('Content-Type', 'application/json');
+				$this->response->setBody(json_encode($this->codes->getGenerateKeys()));
+			});
+
+		$this->get('/phpinfo', function () {
+				phpinfo();
 			});
 	}
 

@@ -2,6 +2,9 @@
 
 namespace Api\Model;
 
+//use PDO;
+//use RecursiveArrayIterator;
+
 function guid() {
 	if (function_exists('com_create_guid')) {
 		return com_create_guid();
@@ -31,16 +34,31 @@ class Codes {
 		//$this->codes = $codes;
 		$this->codesAvailable = array();
 		// for ($i=0; $i < 10; $i++) {
-		// 	$key = array(
-		// 		'id' => guid(),
-		// 		'create_at' => date('Y-m-d'),
-		// 		);
-		// 	array_push($this->codesAvailable, $key);
+		//  $key = array(
+		//      'id' => guid(),
+		//      'create_at' => date('Y-m-d'),
+		//      );
+		//  array_push($this->codesAvailable, $key);
 		// }
 
 		$this->servername = $conn['servername'];
+		$this->basename   = $conn['basename'];
 		$this->username   = $conn['username'];
 		$this->password   = $conn['password'];
+
+		try {
+			$conn = new \PDO("mysql:host=$this->servername;dbname=$this->basename",
+				$this->username, $this->password);
+			// set the PDO error mode to exception
+			$conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+
+		}
+		 catch (PDOException $e) {
+			throw new Exception(
+				"Connection failed: ".$e->getMessage(), 404
+			);
+		}
+
 	}
 
 	public function __destruct() {
@@ -48,43 +66,46 @@ class Codes {
 
 	public function connect() {
 		// Create connection
-		$this->conn = new mysqli($this->servername,
-			$this->username,
-			$this->password,
-			$this->basename);
+		try {
+			$this->conn = new \PDO("mysql:host=$this->servername;dbname=$this->basename",
+				$this->username, $this->password);
+			// set the PDO error mode to exception
+			$this->conn->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 
-		// Check connection
-		if ($conn->connect_error) {
-			die("Connection failed: ".$conn->connect_error);
+		}
+		 catch (PDOException $e) {
+			throw new Exception(
+				"Connection failed: ".$e->getMessage(), 404
+			);
 		}
 	}
 
 	public function disconnect() {
-		$this->conn->close();
+		$this->conn = null;
 	}
 
 	public function getAvailable() {
-		connect();
+		$this->connect();
 
-		$sql    = "SELECT id, create_at FROM Available";
-		$result = $conn->query($sql);
+		$sql = "SELECT id, create_at FROM available";
 
-		if ($result->num_rows > 0) {
-			// output data of each row
+		$this->codesAvailable = array();
 
-			$this->codesAvailable = array();
+		$stmt = $this->conn->prepare($sql);
+		$stmt->execute();
 
-			while ($row = $result->fetch_assoc()) {
-				$key = array(
-					'id'        => $row["id"],
-					'create_at' => $row["create_at"],
-				);
-			}
-		} else {
-			echo "0 results";
+		// set the resulting array to associative
+		$result = $stmt->setFetchMode(\PDO::FETCH_ASSOC);
+		$rows   = $stmt->fetchAll();
+		foreach ($rows as $row) {
+			$key = array(
+				'id'        => $row["id"],
+				'create_at' => $row["create_at"],
+			);
+			array_push($this->codesAvailable, $key);
 		}
 
-		disconnect();
+		$this->disconnect();
 
 		return $this->codesAvailable;
 	}
@@ -95,5 +116,22 @@ class Codes {
 
 	public function getActivated() {
 
+	}
+
+	public function getGenerateKeys() {
+		$this->connect();
+
+		$create_at = date('Y-m-d');
+		for ($i = 0; $i < 5; $i++) {
+			$id  = guid();
+			$sql = "INSERT INTO available (id, create_at) VALUES ('$id', '$create_at')";
+
+			$stmt = $this->conn->prepare($sql);
+			$stmt->execute();
+		}
+		$this->disconnect();
+		return array(
+			'state' => 'success',
+		);
 	}
 }
